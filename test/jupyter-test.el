@@ -1678,6 +1678,34 @@ print(\"foo\", flush=True)
 :END:
 ")))
 
+(ert-deftest jupyter-org-font-lock-ansi-escapes ()
+  :tags '(org)
+  (jupyter-org-test-src-block
+   "print('AB\x1b[43mCD\x1b[0mEF')"
+   ": AB[43mCD[0mEF\n")
+  (jupyter-org-test-src-block
+   "\
+from IPython.display import publish_display_data
+publish_display_data({'text/plain': 'AB\x1b[43mCD\x1b[0mEF'});"
+   ": AB[43mCD[0mEF\n")
+  (with-temp-buffer
+    (org-mode)
+    (jupyter-org-interaction-mode 1)
+    (insert ": AB[43mCD[0mEF")
+    (font-lock-ensure)
+    (jupyter-test-text-has-property 'invisible t '(5 6 7 8 9 12 13 14 15))
+    (should (listp (get-text-property 10 'face)))
+    (should (eq (caar (get-text-property 10 'face)) 'background-color))
+    (erase-buffer)
+    (insert "\
+#+begin_example
+AB[43mCD[0mEF
+#+end_example")
+    (font-lock-ensure)
+    (jupyter-test-text-has-property 'invisible t '(19 20 21 22 23 26 27 28 29))
+    (should (listp (get-text-property 24 'face)))
+    (should (eq (caar (get-text-property 24 'face)) 'background-color))))
+
 (ert-deftest org-babel-jupyter-:results-header-arg ()
   :tags '(org)
   (ert-info ("scalar suppresses table output")
